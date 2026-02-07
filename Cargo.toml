@@ -1,13 +1,13 @@
 [package]
 categories = ["science", "algorithms"]
-name = "proj"
+name = "symproj"
 version = "0.1.0"
 edition = "2021"
 description = "Symbolic projection and embeddings for Tekne"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/arclabs561/proj"
-homepage = "https://github.com/arclabs561/proj"
-documentation = "https://docs.rs/proj"
+repository = "https://github.com/arclabs561/symproj"
+homepage = "https://github.com/arclabs561/symproj"
+documentation = "https://docs.rs/symproj"
 keywords = ["embeddings", "projection", "vector-search", "tekne"]
 authors = ["Arc <attobop@gmail.com>"]
 
@@ -20,3 +20,6 @@ thiserror = "2.0"
 [features]
 default = []
 persistence = ["dep:serde"]
+
+[dev-dependencies]
+proptest = "1.9"

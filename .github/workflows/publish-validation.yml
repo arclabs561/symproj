@@ -20,14 +20,14 @@ jobs:
       - name: cargo publish (dry-run)
         run: cargo publish --dry-run
 
-      - name: crates.io status (proj)
+      - name: crates.io status (symproj)
         run: |
           python3 - <<'PY'
           import json
           import urllib.error
           import urllib.request
           
-          name = "proj"
+          name = "symproj"
           url = f"https://crates.io/api/v1/crates/{name}"
           try:
               with urllib.request.urlopen(url, timeout=10) as resp:

@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -Dwarnings
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Check formatting
+        run: cargo fmt --check
+
+      # symproj doesn't have a semantic feature yet
+      - name: Clippy (strict)
+        run: cargo clippy --lib --all-features -- -D clippy::correctness
+
+      - name: Build
+        run: cargo build
+
+      - name: Test
+        run: cargo test
+
+  # ARM native testing
+  test-arm:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build (ARM)
+        run: cargo build
+
+      - name: Test (ARM)
+        run: cargo test
+
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.81.0
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Check MSRV
+        run: |
+          rm -f Cargo.lock  # v4 lock file requires Cargo 1.83+
+          cargo check
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build docs
+        run: cargo doc --no-deps
+        env:
+          RUSTDOCFLAGS: -Dwarnings
