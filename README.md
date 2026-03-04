@@ -1,5 +1,9 @@
 # symproj
 
+[![crates.io](https://img.shields.io/crates/v/symproj.svg)](https://crates.io/crates/symproj)
+[![Documentation](https://docs.rs/symproj/badge.svg)](https://docs.rs/symproj)
+[![CI](https://github.com/arclabs561/symproj/actions/workflows/ci.yml/badge.svg)](https://github.com/arclabs561/symproj/actions/workflows/ci.yml)
+
 Symbolic projection (embeddings).
 Maps discrete symbols to continuous vectors using a Codebook and pooling.
 
