@@ -158,7 +158,7 @@ impl CodebookProjection {
     ///
     /// We compute:
     /// \[
-    /// v = \frac{\sum_i w_i \, E[t_i]}{\sum_i w_i}
+    /// v = \frac{\sum_i w_i \, E\[t_i\]}{\sum_i w_i}
     /// \]
     /// with the convention that if \(\sum_i w_i \le 0\), we return the zero vector.
     ///
