@@ -1,6 +1,6 @@
 //! # symproj
 //!
-//! Symbolic projection (embeddings) for Tekne.
+//! Symbolic projection and embeddings.
 //!
 //! Maps discrete symbols to continuous vectors using a Codebook.
 //!

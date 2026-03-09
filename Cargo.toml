@@ -1,14 +1,14 @@
 [package]
 categories = ["science", "algorithms"]
 name = "symproj"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
-description = "Symbolic projection and embeddings for Tekne"
+description = "Symbolic projection and embeddings"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/arclabs561/symproj"
 homepage = "https://github.com/arclabs561/symproj"
 documentation = "https://docs.rs/symproj"
-keywords = ["embeddings", "projection", "vector-search", "tekne"]
+keywords = ["embeddings", "projection", "vector-search", "codebook"]
 authors = ["Arc <attobop@gmail.com>"]
 
 [dependencies]
