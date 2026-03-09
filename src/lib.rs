@@ -40,7 +40,6 @@
 //! - `fastembed` (embedding generation via ONNX): <https://docs.rs/fastembed/>
 //! - `candle` (Rust ML runtime): <https://github.com/huggingface/candle>
 
-use innr::pool_mean;
 use textprep::SubwordTokenizer;
 
 #[derive(Debug, thiserror::Error)]
@@ -51,8 +50,10 @@ pub enum Error {
     TokenNotFound(u32),
     #[error("Weight length mismatch: expected {expected}, got {got}")]
     WeightLenMismatch { expected: usize, got: usize },
-    #[error("Encoding error: {0}")]
-    Encoding(String),
+    #[error("dimension cannot be zero")]
+    ZeroDimension,
+    #[error("matrix length {len} is not a multiple of dimension {dim}")]
+    InvalidMatrixShape { len: usize, dim: usize },
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -70,12 +71,13 @@ impl Codebook {
     /// Create a new Codebook from a flattened matrix and dimension.
     pub fn new(matrix: Vec<f32>, dim: usize) -> Result<Self> {
         if dim == 0 {
-            return Err(Error::Encoding("Dimension cannot be zero".to_string()));
+            return Err(Error::ZeroDimension);
         }
-        if matrix.len() % dim != 0 {
-            return Err(Error::Encoding(
-                "Matrix size must be multiple of dimension".to_string(),
-            ));
+        if !matrix.len().is_multiple_of(dim) {
+            return Err(Error::InvalidMatrixShape {
+                len: matrix.len(),
+                dim,
+            });
         }
         Ok(Self { matrix, dim })
     }
@@ -102,36 +104,31 @@ impl Codebook {
     }
 }
 
-/// A projection from token IDs into \(\mathbb{R}^d\), using a [`Codebook`].
-///
-/// This is the “layer-clean” primitive: it does not care how token IDs were produced.
-/// (They might come from a BPE tokenizer, a graph node ID mapping, etc.)
-pub struct CodebookProjection {
-    codebook: Codebook,
-}
-
-impl CodebookProjection {
-    /// Create a new codebook-based projector.
-    pub fn new(codebook: Codebook) -> Self {
-        Self { codebook }
-    }
-
+impl Codebook {
     /// Encode a token-id sequence into a single vector using mean pooling.
     ///
     /// This is **lenient**: token IDs not present in the codebook are skipped.
-    pub fn encode_ids(&self, ids: &[u32]) -> Result<Vec<f32>> {
+    pub fn encode_ids(&self, ids: &[u32]) -> Vec<f32> {
         if ids.is_empty() {
-            return Ok(vec![0.0; self.codebook.dim()]);
+            return vec![0.0; self.dim];
         }
 
-        let embeddings: Vec<&[f32]> = ids.iter().filter_map(|&id| self.codebook.get(id)).collect();
+        let embeddings: Vec<&[f32]> = ids.iter().filter_map(|&id| self.get(id)).collect();
         if embeddings.is_empty() {
-            return Ok(vec![0.0; self.codebook.dim()]);
+            return vec![0.0; self.dim];
         }
 
-        let mut out = vec![0.0; self.codebook.dim()];
-        pool_mean(&embeddings, &mut out);
-        Ok(out)
+        let mut out = vec![0.0; self.dim];
+        let count = embeddings.len() as f32;
+        for emb in &embeddings {
+            for (o, &e) in out.iter_mut().zip(emb.iter()) {
+                *o += e;
+            }
+        }
+        for o in out.iter_mut() {
+            *o /= count;
+        }
+        out
     }
 
     /// Encode token IDs into a single vector using mean pooling (strict).
@@ -140,17 +137,25 @@ impl CodebookProjection {
     /// codebook. This is useful when you need a “closed vocabulary” contract.
     pub fn encode_ids_strict(&self, ids: &[u32]) -> Result<Vec<f32>> {
         if ids.is_empty() {
-            return Ok(vec![0.0; self.codebook.dim()]);
+            return Ok(vec![0.0; self.dim]);
         }
 
         let mut embeddings: Vec<&[f32]> = Vec::with_capacity(ids.len());
         for &id in ids {
-            let emb = self.codebook.get(id).ok_or(Error::TokenNotFound(id))?;
+            let emb = self.get(id).ok_or(Error::TokenNotFound(id))?;
             embeddings.push(emb);
         }
 
-        let mut out = vec![0.0; self.codebook.dim()];
-        pool_mean(&embeddings, &mut out);
+        let mut out = vec![0.0; self.dim];
+        let count = embeddings.len() as f32;
+        for emb in &embeddings {
+            for (o, &e) in out.iter_mut().zip(emb.iter()) {
+                *o += e;
+            }
+        }
+        for o in out.iter_mut() {
+            *o /= count;
+        }
         Ok(out)
     }
 
@@ -171,21 +176,21 @@ impl CodebookProjection {
             });
         }
         if ids.is_empty() {
-            return Ok(vec![0.0; self.codebook.dim()]);
+            return Ok(vec![0.0; self.dim]);
         }
 
-        let dim = self.codebook.dim();
+        let dim = self.dim;
         let mut out = vec![0.0f32; dim];
         let mut sum_w = 0.0f32;
 
         for (&id, &w) in ids.iter().zip(weights.iter()) {
-            let emb = self.codebook.get(id).ok_or(Error::TokenNotFound(id))?;
+            let emb = self.get(id).ok_or(Error::TokenNotFound(id))?;
             if w == 0.0 {
                 continue;
             }
             sum_w += w;
-            for j in 0..dim {
-                out[j] += w * emb[j];
+            for (o, &e) in out.iter_mut().zip(emb.iter()) {
+                *o += w * e;
             }
         }
 
@@ -193,21 +198,21 @@ impl CodebookProjection {
             return Ok(vec![0.0; dim]);
         }
 
-        for j in 0..dim {
-            out[j] /= sum_w;
+        for o in out.iter_mut() {
+            *o /= sum_w;
         }
         Ok(out)
     }
 
     /// Encode token ids into a sequence of vectors (no pooling).
-    pub fn encode_sequence_ids(&self, ids: &[u32]) -> Result<Vec<Vec<f32>>> {
+    pub fn encode_sequence_ids(&self, ids: &[u32]) -> Vec<Vec<f32>> {
         let mut result = Vec::with_capacity(ids.len());
         for &id in ids {
-            if let Some(emb) = self.codebook.get(id) {
+            if let Some(emb) = self.get(id) {
                 result.push(emb.to_vec());
             }
         }
-        Ok(result)
+        result
     }
 }
 
@@ -270,7 +275,7 @@ pub fn remove_component_in_place(v: &mut [f32], u_unit: &[f32]) -> Result<()> {
 /// A Projection combines a Tokenizer and a Codebook.
 pub struct Projection<T: SubwordTokenizer> {
     tokenizer: T,
-    projector: CodebookProjection,
+    codebook: Codebook,
 }
 
 impl<T: SubwordTokenizer> Projection<T> {
@@ -278,20 +283,20 @@ impl<T: SubwordTokenizer> Projection<T> {
     pub fn new(tokenizer: T, codebook: Codebook) -> Self {
         Self {
             tokenizer,
-            projector: CodebookProjection::new(codebook),
+            codebook,
         }
     }
 
     /// Encode text into a single vector using mean pooling.
-    pub fn encode(&self, text: &str) -> Result<Vec<f32>> {
+    pub fn encode(&self, text: &str) -> Vec<f32> {
         let tokens = self.tokenizer.tokenize(text);
-        self.projector.encode_ids(&tokens)
+        self.codebook.encode_ids(&tokens)
     }
 
     /// Encode text into a sequence of vectors (no pooling).
-    pub fn encode_sequence(&self, text: &str) -> Result<Vec<Vec<f32>>> {
+    pub fn encode_sequence(&self, text: &str) -> Vec<Vec<f32>> {
         let tokens = self.tokenizer.tokenize(text);
-        self.projector.encode_sequence_ids(&tokens)
+        self.codebook.encode_sequence_ids(&tokens)
     }
 }
 
@@ -315,7 +320,7 @@ mod tests {
         let codebook = Codebook::new(matrix, 3).unwrap();
         let proj = Projection::new(tokenizer, codebook);
 
-        let vec = proj.encode("apple pie").unwrap();
+        let vec = proj.encode("apple pie");
         // Mean pooling: ( [1,0,0] + [0,1,0] ) / 2 = [0.5, 0.5, 0]
         assert!((vec[0] - 0.5).abs() < 1e-6);
         assert!((vec[1] - 0.5).abs() < 1e-6);
@@ -326,24 +331,20 @@ mod tests {
     fn test_codebook_rejects_zero_dim() {
         let err = Codebook::new(vec![1.0, 2.0, 3.0], 0).unwrap_err();
         let msg = err.to_string();
-        assert!(msg.contains("Dimension cannot be zero"), "got: {msg}");
+        assert!(msg.contains("dimension cannot be zero"), "got: {msg}");
     }
 
     #[test]
     fn test_codebook_rejects_non_multiple() {
         let err = Codebook::new(vec![1.0, 2.0, 3.0], 2).unwrap_err();
         let msg = err.to_string();
-        assert!(
-            msg.contains("Matrix size must be multiple of dimension"),
-            "got: {msg}"
-        );
+        assert!(msg.contains("not a multiple of dimension"), "got: {msg}");
     }
 
     #[test]
-    fn codebook_projection_strict_errors_on_missing_token() {
+    fn codebook_strict_errors_on_missing_token() {
         let codebook = Codebook::new(vec![1.0, 2.0], 2).unwrap(); // vocab_size=1
-        let p = CodebookProjection::new(codebook);
-        let err = p.encode_ids_strict(&[0, 9]).unwrap_err();
+        let err = codebook.encode_ids_strict(&[0, 9]).unwrap_err();
         let msg = err.to_string();
         assert!(msg.contains("Token not found"), "got: {msg}");
     }
@@ -355,10 +356,9 @@ mod tests {
             0.0, 1.0, // id=1
         ];
         let codebook = Codebook::new(matrix, 2).unwrap();
-        let p = CodebookProjection::new(codebook);
         let ids = [0u32, 1u32];
         let w = [1.0f32, 1.0f32];
-        let v = p.encode_ids_weighted_strict(&ids, &w).unwrap();
+        let v = codebook.encode_ids_weighted_strict(&ids, &w).unwrap();
         assert!((v[0] - 0.5).abs() < 1e-6);
         assert!((v[1] - 0.5).abs() < 1e-6);
     }
@@ -387,7 +387,7 @@ mod tests {
         let codebook = Codebook::new(matrix, 1).unwrap();
         let proj = Projection::new(tokenizer, codebook);
 
-        let v = proj.encode("東京 Москва التقى राम François").unwrap();
+        let v = proj.encode("東京 Москва التقى राम François");
         assert!((v[0] - 3.0).abs() < 1e-6, "got={:?}", v);
     }
 }
