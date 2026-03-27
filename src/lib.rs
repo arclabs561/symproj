@@ -43,6 +43,7 @@
 use textprep::SubwordTokenizer;
 
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum Error {
     #[error("Dimension mismatch: expected {expected}, got {got}")]
     DimensionMismatch { expected: usize, got: usize },
@@ -91,6 +92,11 @@ impl Codebook {
         } else {
             None
         }
+    }
+
+    /// The raw flattened embedding matrix `[vocab_size * dim]`.
+    pub fn matrix(&self) -> &[f32] {
+        &self.matrix
     }
 
     /// Get the embedding dimension.
