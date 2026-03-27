@@ -221,8 +221,13 @@ impl Codebook {
 /// w(p) = \frac{a}{a + p}
 /// \]
 /// where \(p\) is token probability and \(a\) is a small smoothing constant (often \(10^{-3}\)).
+///
+/// Returns `0.0` when `a <= 0` or `p < 0`. Negative probabilities are not meaningful;
+/// this function treats them as a no-op rather than panicking, but a `debug_assert`
+/// fires in debug builds to help catch upstream bugs.
 #[inline]
 pub fn sif_weight(p: f32, a: f32) -> f32 {
+    debug_assert!(p >= 0.0, "sif_weight: p must be non-negative, got {p}");
     if a <= 0.0 {
         return 0.0;
     }
@@ -262,6 +267,10 @@ pub fn remove_component_in_place(v: &mut [f32], u_unit: &[f32]) -> Result<()> {
             got: u_unit.len(),
         });
     }
+    debug_assert!(
+        (u_unit.iter().map(|x| x * x).sum::<f32>().sqrt() - 1.0).abs() < 0.01,
+        "u_unit should be approximately unit norm"
+    );
     let mut dot = 0.0f32;
     for i in 0..v.len() {
         dot += u_unit[i] * v[i];
@@ -369,6 +378,41 @@ mod tests {
         l2_normalize_in_place(&mut v);
         let norm = (v[0] * v[0] + v[1] * v[1]).sqrt();
         assert!((norm - 1.0).abs() < 1e-6, "norm={norm}");
+    }
+
+    #[test]
+    fn single_token_equals_embedding() {
+        let codebook = Codebook::new(vec![1.0, 2.0, 3.0], 3).unwrap();
+        let v = codebook.encode_ids(&[0]);
+        assert_eq!(&v[..], &[1.0, 2.0, 3.0]);
+    }
+
+    #[test]
+    fn encode_ids_all_missing_returns_zero_vector() {
+        let codebook = Codebook::new(vec![1.0, 2.0, 3.0], 3).unwrap();
+        let v = codebook.encode_ids(&[999]);
+        assert_eq!(&v[..], &[0.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn weighted_zero_weights_returns_zero_vector() {
+        let codebook = Codebook::new(vec![1.0, 2.0, 3.0], 3).unwrap();
+        let v = codebook.encode_ids_weighted_strict(&[0], &[0.0]).unwrap();
+        assert_eq!(&v[..], &[0.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn l2_normalize_noop_on_zero_vector() {
+        let mut v = vec![0.0f32, 0.0, 0.0];
+        l2_normalize_in_place(&mut v);
+        assert_eq!(&v[..], &[0.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn remove_component_dimension_mismatch_errors() {
+        let mut v = vec![1.0f32, 2.0];
+        let u = vec![0.0f32, 1.0, 0.0];
+        assert!(remove_component_in_place(&mut v, &u).is_err());
     }
 
     #[test]
