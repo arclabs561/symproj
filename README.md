@@ -4,12 +4,7 @@
 [![Documentation](https://docs.rs/symproj/badge.svg)](https://docs.rs/symproj)
 [![CI](https://github.com/arclabs561/symproj/actions/workflows/ci.yml/badge.svg)](https://github.com/arclabs561/symproj/actions/workflows/ci.yml)
 
-Symbolic projection (embeddings).
-Maps discrete symbols to continuous vectors using a Codebook and pooling.
-
-## Intuition
-
-Imagine a library where every book has a call number. The call number isn't just a label; it tells you where the book sits in a 3D space. `symproj` is the system that maps "book names" (tokens) to "library coordinates" (vectors).
+Codebook-based token-to-vector projection.
 
 ## Usage
 
