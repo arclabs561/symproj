@@ -11,6 +11,8 @@ documentation = "https://docs.rs/symproj"
 keywords = ["embeddings", "projection", "vector-search", "codebook"]
 authors = ["Arc <attobop@gmail.com>"]
 
+[workspace]
+
 [dependencies]
 textprep = { version = "0.1.3" }
 thiserror = "2.0"
