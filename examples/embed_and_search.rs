@@ -9,7 +9,7 @@
 
 use std::collections::HashMap;
 use symproj::{l2_normalize_in_place, Codebook, Projection};
-use textprep::BpeTokenizer;
+use textprep::VocabTokenizer;
 use vicinity::hnsw::HNSWIndex;
 
 fn main() {
@@ -59,7 +59,7 @@ fn main() {
 
     let dim = 4;
     let codebook = Codebook::new(matrix, dim).expect("valid codebook");
-    let tokenizer = BpeTokenizer::from_vocab(vocab);
+    let tokenizer = VocabTokenizer::from_vocab(vocab);
     let proj = Projection::new(tokenizer, codebook);
 
     // -- Corpus --------------------------------------------------------------
