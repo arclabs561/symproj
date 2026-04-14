@@ -21,4 +21,4 @@ thiserror = "2.0"
 proptest = "1.5"
 innr = "0.2"
 rankops = "0.1.4"
-vicinity = { version = "0.2", default-features = false, features = ["hnsw"] }
+vicinity = { version = "0.4", default-features = false, features = ["hnsw"] }
