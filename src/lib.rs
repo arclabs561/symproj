@@ -319,14 +319,14 @@ impl<T: SubwordTokenizer> Projection<T> {
 mod tests {
     use super::*;
     use std::collections::HashMap;
-    use textprep::BpeTokenizer;
+    use textprep::VocabTokenizer;
 
     #[test]
     fn test_projection_basic() {
         let mut vocab = HashMap::new();
         vocab.insert("apple".to_string(), 0);
         vocab.insert("pie".to_string(), 1);
-        let tokenizer = BpeTokenizer::from_vocab(vocab);
+        let tokenizer = VocabTokenizer::from_vocab(vocab);
 
         let matrix = vec![
             1.0, 0.0, 0.0, // apple
@@ -430,7 +430,7 @@ mod tests {
         vocab.insert("التقى".to_string(), 2);
         vocab.insert("राम".to_string(), 3);
         vocab.insert("François".to_string(), 4);
-        let tokenizer = BpeTokenizer::from_vocab(vocab);
+        let tokenizer = VocabTokenizer::from_vocab(vocab);
 
         // 5 tokens, 1-D vectors for simplicity.
         let matrix = vec![1.0, 2.0, 3.0, 4.0, 5.0];
