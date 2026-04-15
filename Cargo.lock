@@ -550,9 +550,9 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
 name = "vicinity"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32e9433bdb2301ad8a5fa9bb3bc3a4efde140f136fbd148ab4a89ff81663a31f"
+checksum = "c4982d50ab993374d6616de610024e19c2894d8ab156258603ca9a2d1095970a"
 dependencies = [
  "getrandom 0.3.4",
  "innr",
