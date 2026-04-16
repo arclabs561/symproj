@@ -210,7 +210,56 @@ impl Codebook {
         Ok(out)
     }
 
-    /// Encode token ids into a sequence of vectors (no pooling).
+    /// Encode token IDs into per-token vectors (no pooling).
+    ///
+    /// Returns one vector per token ID that is present in the codebook.
+    /// Token IDs missing from the codebook are silently skipped (same
+    /// lenient behaviour as [`Self::encode_ids`]).
+    ///
+    /// ## ColBERT late-interaction workflow
+    ///
+    /// This method produces the per-token vector sequence used in the
+    /// ColBERT retrieval model (Khattab & Zaharia, 2020). ColBERT avoids
+    /// pooling: every token in the query and every token in a document gets
+    /// its own vector, and scoring is done via MaxSim (maximum inner product
+    /// between each query token and all document tokens).
+    ///
+    /// ```rust
+    /// use symproj::Codebook;
+    ///
+    /// // Tiny codebook: 4 tokens, 3-D vectors
+    /// let matrix = vec![
+    ///     1.0, 0.0, 0.0,   // token 0: "the"
+    ///     0.0, 1.0, 0.0,   // token 1: "cat"
+    ///     0.0, 0.0, 1.0,   // token 2: "sat"
+    ///     0.5, 0.5, 0.0,   // token 3: "mat"
+    /// ];
+    /// let codebook = Codebook::new(matrix, 3).unwrap();
+    ///
+    /// // Query tokens: "the cat"
+    /// let query_vecs = codebook.encode_sequence_ids(&[0, 1]);
+    /// assert_eq!(query_vecs.len(), 2);
+    ///
+    /// // Document tokens: "cat sat mat"
+    /// let doc_vecs = codebook.encode_sequence_ids(&[1, 2, 3]);
+    /// assert_eq!(doc_vecs.len(), 3);
+    ///
+    /// // MaxSim: for each query token, max inner product over all doc tokens.
+    /// // Then sum over query tokens for the ColBERT score.
+    /// // In production, pipe into `rankops::rerank::colbert` for MaxSim scoring.
+    /// let mut colbert_score = 0.0f32;
+    /// for q in &query_vecs {
+    ///     let max_sim: f32 = doc_vecs.iter()
+    ///         .map(|d| q.iter().zip(d).map(|(a, b)| a * b).sum::<f32>())
+    ///         .fold(f32::NEG_INFINITY, f32::max);
+    ///     colbert_score += max_sim;
+    /// }
+    /// assert!(colbert_score > 0.0);
+    /// ```
+    ///
+    /// For large-scale use, pass the output of this method directly to
+    /// `rankops::rerank::colbert`, which implements the efficient MaxSim
+    /// computation over a candidate set.
     pub fn encode_sequence_ids(&self, ids: &[u32]) -> Vec<Vec<f32>> {
         let mut result = Vec::with_capacity(ids.len());
         for &id in ids {
