@@ -99,7 +99,7 @@ proptest! {
     #[test]
     fn sif_weight_in_zero_one(p in 0.0f32..1.0, a in 0.001f32..1.0) {
         let w = sif_weight(p, a);
-        prop_assert!(w >= 0.0 && w <= 1.0, "sif_weight out of [0,1]: {w}");
+        prop_assert!((0.0..=1.0).contains(&w), "sif_weight out of [0,1]: {w}");
     }
 
     #[test]
