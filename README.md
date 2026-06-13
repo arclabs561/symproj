@@ -10,18 +10,18 @@ Codebook-based token-to-vector projection.
 
 ```rust
 use symproj::{Codebook, Projection};
-use textprep::BpeTokenizer;
+use textprep::VocabTokenizer;
 
-// 1. Load a Codebook (matrix + dimension)
-let matrix = vec![...]; // flattened [vocab_size * dim]
+// 1. Load a Codebook (flattened [vocab_size * dim] matrix + dimension)
+let matrix = vec![/* vocab_size * dim f32 values */];
 let codebook = Codebook::new(matrix, 384).unwrap();
 
-// 2. Create a Projection (tokenizer + codebook)
-let tokenizer = BpeTokenizer::from_file("tokenizer.json")?;
+// 2. Build a tokenizer over your vocab, then a Projection (tokenizer + codebook)
+let tokenizer = VocabTokenizer::from_vocab(vocab); // vocab: HashMap<String, u32>
 let proj = Projection::new(tokenizer, codebook);
 
-// 3. Encode text -> vector (mean pooling)
-let vec = proj.encode("Hello world").unwrap();
+// 3. Encode text -> vector (mean pooling over token embeddings)
+let vec = proj.encode("Hello world");
 ```
 
 ## Features
