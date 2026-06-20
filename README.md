@@ -6,6 +6,9 @@
 
 Codebook-based token-to-vector projection.
 
+See [examples/README.md](examples/README.md) for runnable projection, search,
+reranking, and normalization examples.
+
 ## Usage
 
 ```rust
