@@ -5,42 +5,12 @@
 //! Maps token IDs to dense vectors with a [`Codebook`], then exposes pooled
 //! phrase vectors and per-token vector sequences.
 //!
-//! **Naming note**: this crate was previously named `proj`, but `proj` is already taken on crates.io
-//! by GeoRust's PROJ bindings (geospatial). We publish this crate as `symproj`.
-//!
 //! ## Scope
 //!
 //! `symproj` does not train embedding models or load external embedding file
 //! formats. Use it when the vocabulary and embedding matrix already exist and
 //! the remaining job is lookup, pooling, normalization, or sequence output for
 //! downstream retrieval code.
-//!
-//! ## Provenance (minimal citations)
-//!
-//! What this crate implements is the long-lived primitive:
-//! \[
-//! (t_1,\dots,t_n)\mapsto \mathbb{R}^d
-//! \]
-//! via (1) embedding lookup (a codebook) and (2) pooling (mean).
-//!
-//! - **Word embeddings / lookup tables**: Mikolov et al. (word2vec), 2013. [`arXiv:1301.3781`](https://arxiv.org/abs/1301.3781)
-//! - **Subword tokenization**:
-//!   - BPE for NMT: Sennrich et al., 2016. [`P16-1162`](https://aclanthology.org/P16-1162/)
-//!   - SentencePiece / Unigram LM: Kudo, 2018. [`arXiv:1808.06226`](https://arxiv.org/abs/1808.06226)
-//! - **Sentence embeddings baseline**: Arora et al. (SIF), 2017. [`ICLR OpenReview`](https://openreview.net/forum?id=SyK00v5xx)
-//! - **Modern sentence embedding fine-tuning**:
-//!   - SBERT: Reimers & Gurevych, 2019. [`D19-1410`](https://aclanthology.org/D19-1410/)
-//!   - SimCSE: Gao et al., 2021. [`EMNLP 2021`](https://aclanthology.org/2021.emnlp-main.552/)
-//! - **Retrieval context (token vectors + pooling/compression)**:
-//!   - ColBERT (late interaction): Khattab & Zaharia, 2020. [`arXiv:2004.12832`](https://arxiv.org/abs/2004.12832)
-//!
-//! ## Nearby Rust ecosystem crates (context, not dependencies)
-//!
-//! - `tokenizers` (Hugging Face tokenization): <https://docs.rs/tokenizers/>
-//! - `sentencepiece` (SentencePiece model loading): <https://crates.io/crates/sentencepiece>
-//! - `finalfusion` / `rust2vec` (word embedding formats): <https://docs.rs/finalfusion/> / <https://docs.rs/rust2vec/>
-//! - `fastembed` (embedding generation via ONNX): <https://docs.rs/fastembed/>
-//! - `candle` (Rust ML runtime): <https://github.com/huggingface/candle>
 
 use textprep::SubwordTokenizer;
 
