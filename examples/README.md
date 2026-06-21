@@ -27,3 +27,36 @@ to rows in a codebook, phrase vectors are pooled, and the resulting vectors can
 be indexed like any other embeddings. Read `embed_search_rerank` next if you
 want the full retrieval loop. Use `simd_normalize` when you are checking that
 normalization remains compatible with a separate vector-kernel layer.
+
+## Expected Output
+
+`embed_and_search` should retrieve the exact phrase match first for simple
+queries:
+
+```text
+Query: "dog cat"
+  0: "cat dog"  (distance=-0.0000)
+  1: "cat fish"  (distance=0.0351)
+```
+
+`embed_search_rerank` prints the ANN candidates and the MMR order. With the
+current deterministic corpus, the order is unchanged:
+
+```text
+Query tokens: [0, 1, 2, 50, 51]
+ANN results (distance, lower = closer):
+  0: doc  0 (dist=0.0296)  tokens=[0, 1, 2, 3, 4]
+
+Ranking unchanged.
+```
+
+`simd_normalize` should keep scalar and SIMD normalization within floating
+point tolerance:
+
+```text
+ids=[0, 1, 2]
+  norm (symproj): 0.99999976
+  norm (innr):    1.00000000
+  max element diff: 5.96e-8
+  PASSED
+```
