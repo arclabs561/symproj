@@ -1,17 +1,19 @@
 //! # symproj
 //!
-//! Symbolic projection and embeddings.
+//! Codebook-based token-to-vector projection.
 //!
-//! Maps discrete symbols to continuous vectors using a Codebook.
+//! Maps token IDs to dense vectors with a [`Codebook`], then exposes pooled
+//! phrase vectors and per-token vector sequences.
 //!
 //! **Naming note**: this crate was previously named `proj`, but `proj` is already taken on crates.io
 //! by GeoRust's PROJ bindings (geospatial). We publish this crate as `symproj`.
 //!
-//! ## Intuition First
+//! ## Scope
 //!
-//! Imagine a library where every book has a call number. The call number
-//! isn't just a label; it tells you where the book sits in a 3D space.
-//! `symproj` is the system that maps "book names" (tokens) to "library coordinates" (vectors).
+//! `symproj` does not train embedding models or load external embedding file
+//! formats. Use it when the vocabulary and embedding matrix already exist and
+//! the remaining job is lookup, pooling, normalization, or sequence output for
+//! downstream retrieval code.
 //!
 //! ## Provenance (minimal citations)
 //!
