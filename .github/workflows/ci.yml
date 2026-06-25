@@ -30,6 +30,8 @@ jobs:
 
       - name: Test
         run: cargo test
+      - name: run example assertions
+        run: cargo run --example simd_normalize
 
   # ARM native testing
   test-arm:
