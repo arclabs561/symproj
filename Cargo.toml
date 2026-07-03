@@ -20,5 +20,5 @@ thiserror = "2.0"
 [dev-dependencies]
 proptest = "1.5"
 innr = "0.6"
-rankops = "0.1.8"
-vicinity = { version = "0.8", default-features = false, features = ["hnsw"] }
+rankops = "0.1.10"
+vicinity = { version = "0.10", default-features = false, features = ["hnsw"] }
