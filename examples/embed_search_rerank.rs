@@ -7,9 +7,10 @@
 //!   4. Build a vicinity HNSW index
 //!   5. Search for a query
 //!   6. Rerank with rankops MMR for diversity
-//!   7. Print before/after rankings
+//!   7. Score the same candidates with flat `ColBERT` `MaxSim` buffers
+//!   8. Print before/after rankings
 
-use rankops::{mmr_embeddings, MmrConfig};
+use rankops::{mmr_embeddings, rerank::colbert, MmrConfig};
 use symproj::{l2_normalize_in_place, Codebook};
 use vicinity::hnsw::HNSWIndex;
 
@@ -120,7 +121,31 @@ fn main() {
         println!("  {rank}: doc {doc_id:>2} (mmr={score:.4})  tokens={tokens:?}");
     }
 
-    // Show which documents moved.
+    // ── 7. Score flat per-token buffers with ColBERT MaxSim ──────────────
+    let (query_tokens_flat, query_present) = codebook.encode_sequence_ids_flat(&query_ids);
+    assert_eq!(query_present, query_ids.len());
+
+    let colbert_docs: Vec<(u32, Vec<f32>)> = ann_results
+        .iter()
+        .map(|&(doc_id, _)| {
+            let doc_tokens = &documents[doc_id as usize];
+            let (tokens_flat, present) = codebook.encode_sequence_ids_flat(doc_tokens);
+            assert_eq!(present, doc_tokens.len());
+            (doc_id, tokens_flat)
+        })
+        .collect();
+
+    let colbert_ranked =
+        colbert::rank_flat(&query_tokens_flat, &colbert_docs, dim).expect("valid flat buffers");
+
+    println!("\nFlat ColBERT reranked (MaxSim):");
+    for (rank, (doc_id, score)) in colbert_ranked.iter().take(k).enumerate() {
+        let tokens = &documents[*doc_id as usize];
+        println!("  {rank}: doc {doc_id:>2} (maxsim={score:.4})  tokens={tokens:?}");
+    }
+
+    // ── 8. Print before/after ────────────────────────────────────────────
+    // Show which documents moved under MMR.
     let ann_order: Vec<u32> = ann_results.iter().map(|&(id, _)| id).collect();
     let mmr_order: Vec<u32> = reranked.iter().map(|(id, _)| *id).collect();
     let changed = ann_order != mmr_order;

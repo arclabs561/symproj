@@ -1,7 +1,8 @@
-//! Compare symproj's `l2_normalize_in_place` with innr's SIMD-accelerated `normalize`.
+//! Compare symproj's `l2_normalize_in_place` with innr's `normalize`.
 //!
-//! Both should produce identical unit vectors. innr dispatches to NEON/AVX2/AVX-512
-//! at runtime; symproj uses scalar code. This example verifies they agree.
+//! Both should produce identical unit vectors. Without symproj's `simd` feature,
+//! this compares symproj's scalar implementation against innr. With the feature,
+//! `l2_normalize_in_place` delegates to innr and this checks the delegated path.
 
 use innr::{norm, normalize as innr_normalize};
 use symproj::{l2_normalize_in_place, Codebook};
@@ -26,6 +27,14 @@ fn main() {
         "Codebook: vocab_size={}, dim={dim}\n",
         codebook.vocab_size()
     );
+    println!(
+        "symproj simd feature: {}\n",
+        if cfg!(feature = "simd") {
+            "enabled"
+        } else {
+            "disabled"
+        }
+    );
 
     // Encode a few token-id sequences and normalize both ways.
     let sequences: &[&[u32]] = &[&[0, 1, 2], &[3, 4, 5, 6, 7], &[0, 7], &[2]];
@@ -37,7 +46,7 @@ fn main() {
         let mut v_symproj = raw.clone();
         l2_normalize_in_place(&mut v_symproj);
 
-        // innr SIMD path
+        // innr path
         let mut v_innr = raw.clone();
         innr_normalize(&mut v_innr);
 

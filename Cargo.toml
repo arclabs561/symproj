@@ -1,24 +1,32 @@
 [package]
 categories = ["science", "algorithms"]
 name = "symproj"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
+rust-version = "1.89"
 description = "Codebook-based token-to-vector projection"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/arclabs561/symproj"
-homepage = "https://github.com/arclabs561/symproj"
+homepage = "https://docs.rs/symproj"
 documentation = "https://docs.rs/symproj"
-keywords = ["embeddings", "projection", "vector-search", "codebook"]
-authors = ["Arc <attobop@gmail.com>"]
+readme = "README.md"
+keywords = ["embeddings", "projection", "vector-search", "codebook", "nlp"]
+exclude = ["Cargo.lock.msrv"]
 
 [workspace]
 
+[features]
+default = []
+simd = ["dep:innr"]
+
 [dependencies]
-textprep = { version = "0.1.3" }
+innr = { version = "0.6.3", optional = true }
+textprep = "0.1.6"
 thiserror = "2.0"
 
 [dev-dependencies]
 proptest = "1.5"
-innr = "0.6"
-rankops = "0.1.10"
+innr = "0.6.3"
+rankops = "0.2"
+static_assertions = "1.1"
 vicinity = { version = "0.10", default-features = false, features = ["hnsw"] }

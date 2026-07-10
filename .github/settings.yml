@@ -16,6 +16,7 @@ repository:
 
   topics:
     - embeddings
+    - nlp
     - projection
     - rust
     - vector-search

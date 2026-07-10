@@ -11,26 +11,24 @@ reranking, and normalization examples.
 ## Usage
 
 ```rust
+use std::collections::HashMap;
 use symproj::{Codebook, Projection};
 use textprep::VocabTokenizer;
 
-// 1. Load a Codebook (flattened [vocab_size * dim] matrix + dimension)
-let matrix = vec![/* vocab_size * dim f32 values */];
-let codebook = Codebook::new(matrix, 384).unwrap();
+let mut vocab = HashMap::new();
+vocab.insert("hello".to_string(), 0);
+vocab.insert("world".to_string(), 1);
 
-// 2. Build a tokenizer over your vocab, then a Projection (tokenizer + codebook)
-let tokenizer = VocabTokenizer::from_vocab(vocab); // vocab: HashMap<String, u32>
+let tokenizer = VocabTokenizer::from_vocab(vocab);
+let codebook = Codebook::new(vec![
+    1.0, 0.0, // hello
+    0.0, 1.0, // world
+], 2).unwrap();
 let proj = Projection::new(tokenizer, codebook);
 
-// 3. Encode text -> vector (mean pooling over token embeddings)
-let vec = proj.encode("Hello world");
+let vector = proj.encode("hello world");
+assert_eq!(vector, vec![0.5, 0.5]);
 ```
-
-## Features
-
-- **Codebook**: Dense embedding matrix lookup.
-- **Pooling**: Mean, weighted mean (SIF), and sequence output.
-- **Normalization**: L2 normalization and component removal (PCA-based denoising).
 
 ## License
 
