@@ -11,7 +11,7 @@ homepage = "https://docs.rs/symproj"
 documentation = "https://docs.rs/symproj"
 readme = "README.md"
 keywords = ["embeddings", "projection", "vector-search", "codebook", "nlp"]
-exclude = ["Cargo.lock.msrv"]
+include = ["/src", "/examples", "/README.md", "/CHANGELOG.md", "/LICENSE*"]
 
 [workspace]
 
