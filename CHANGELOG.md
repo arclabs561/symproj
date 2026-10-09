@@ -4,6 +4,11 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+### Fixed
+
+- `encode_ids_weighted_strict` docs: scaling weights cannot reproduce Arora et
+  al.'s 1/|s| convention; multiply the result by `sum_w / ids.len()` instead.
+
 ## [0.1.4] - 2026-07-09
 
 ### Added

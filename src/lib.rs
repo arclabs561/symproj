@@ -1,3 +1,4 @@
+#![doc = include_str!("../README.md")]
 //! # symproj
 //!
 //! Codebook-based token-to-vector projection.
@@ -131,7 +132,6 @@ impl Codebook {
     }
 
     /// Iterate over all token vectors in token-ID order.
-    #[must_use]
     pub fn iter(&self) -> impl ExactSizeIterator<Item = &[f32]> + '_ {
         self.matrix.chunks_exact(self.dim)
     }
@@ -235,8 +235,9 @@ impl Codebook {
     ///
     /// This is a weighted mean, so the denominator is `sum_w`. The original
     /// SIF sentence embedding from Arora et al. (2017) divides by sentence
-    /// length before first-principal-component removal; callers that need that
-    /// exact convention should scale weights before calling this method.
+    /// length before first-principal-component removal. Scaling the weights
+    /// does not change a weighted mean, so callers that need that exact
+    /// convention should multiply the result by `sum_w / ids.len()`.
     ///
     /// # Errors
     ///

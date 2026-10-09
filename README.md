@@ -5,6 +5,11 @@
 
 Codebook-based token-to-vector projection.
 
+To load and run pretrained static embedding models, use
+[`model2vec-rs`](https://crates.io/crates/model2vec-rs); use symproj when the
+vocabulary and embedding matrix already exist and you need lookup, mean or
+SIF-weighted pooling (Arora et al. 2017), or per-token vector sequences.
+
 See [examples/README.md](examples/README.md) for runnable projection, search,
 reranking, and normalization examples.
 
