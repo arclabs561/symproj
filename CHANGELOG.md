@@ -4,6 +4,24 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-10-09
+
+### Added
+
+- `Error::NonFiniteWeight` and `Error::InvalidUnitDirection` variants.
+
+### Changed
+
+- `encode_ids_weighted_strict` returns `Error::NonFiniteWeight` when a weight
+  is NaN or infinite.
+- `remove_component_unit_in_place` returns `Error::InvalidUnitDirection`
+  when `u_unit` is non-finite or its norm differs from 1 by 0.01 or more.
+  This was previously a debug-only assertion; release builds proceeded.
+- `sif_weight` returns `0.0` when either input is non-finite, and no longer
+  has a debug assertion on negative `p`.
+- Without the `simd` feature, `l2_normalize_in_place` leaves vectors with
+  norm at or below `1e-9` unchanged instead of dividing by a tiny norm.
+
 ### Fixed
 
 - `encode_ids_weighted_strict` docs: scaling weights cannot reproduce Arora et
@@ -68,6 +86,8 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 - Unused dependencies.
 
+[Unreleased]: https://github.com/arclabs561/symproj/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/arclabs561/symproj/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/arclabs561/symproj/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/arclabs561/symproj/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/arclabs561/symproj/releases/tag/v0.1.2
