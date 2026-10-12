@@ -1,6 +1,68 @@
 use proptest::prelude::*;
 use symproj::{l2_normalize_in_place, remove_component_in_place, sif_weight, Codebook};
 
+#[test]
+fn vocab_projection_reports_codebook_coverage_of_emitted_ids() {
+    use symproj::Projection;
+    use textprep::{SubwordTokenizer, VocabTokenizer};
+
+    let tokenizer = VocabTokenizer::from_vocab(
+        [
+            ("known".into(), 0),
+            ("absent".into(), 9),
+            ("later".into(), 1),
+        ]
+        .into(),
+    );
+    let text = "known unknown absent later known";
+    // Unknown words have no token ID; absent has an ID but no codebook row.
+    assert_eq!(tokenizer.tokenize(text), vec![0, 9, 1, 0]);
+    let codebook = Codebook::new(vec![3.0, 6.0, 6.0, 9.0], 2).unwrap();
+    let projection = Projection::new(tokenizer, codebook);
+
+    let (pooled, stats) = projection.encode_with_stats(text);
+    assert_eq!(pooled, vec![4.0, 7.0]);
+    assert_eq!(stats.total, 4);
+    assert_eq!(stats.present, 3);
+    assert_eq!(stats.missing_ids, vec![9]);
+    assert_eq!(stats.missing(), 1);
+    assert!(!stats.all_present());
+    assert_eq!(
+        projection.encode_sequence(text),
+        vec![vec![3.0, 6.0], vec![6.0, 9.0], vec![3.0, 6.0]]
+    );
+    assert_eq!(
+        projection.encode_sequence_flat(text),
+        (vec![3.0, 6.0, 6.0, 9.0, 3.0, 6.0], 3)
+    );
+
+    let (pooled, stats) = projection.encode_with_stats("unknown words");
+    assert_eq!(pooled, vec![0.0, 0.0]);
+    assert_eq!(stats.total, 0);
+    assert_eq!(stats.present, 0);
+    assert!(stats.missing_ids.is_empty());
+    assert!(stats.all_present()); // Every emitted ID is present: there are none.
+    assert!(projection.encode_sequence("unknown words").is_empty());
+    assert_eq!(
+        projection.encode_sequence_flat("unknown words"),
+        (vec![], 0)
+    );
+}
+
+#[test]
+fn sequence_output_preserves_present_id_order_and_duplicates() {
+    let codebook = Codebook::new(vec![3.0, 6.0, 6.0, 9.0], 2).unwrap();
+    let ids = [9, 1, 0, 9, 1];
+    assert_eq!(
+        codebook.encode_sequence_ids(&ids),
+        vec![vec![6.0, 9.0], vec![3.0, 6.0], vec![6.0, 9.0]]
+    );
+    assert_eq!(
+        codebook.encode_sequence_ids_flat(&ids),
+        (vec![6.0, 9.0, 3.0, 6.0, 6.0, 9.0], 3)
+    );
+}
+
 /// Strategy for a codebook with `vocab_size` tokens of dimension `dim`.
 fn codebook_strategy(vocab_size: usize, dim: usize) -> impl Strategy<Value = Codebook> {
     proptest::collection::vec(-10.0f32..10.0, vocab_size * dim)
