@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here. Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Source history (unversioned)
+
+These source changes are listed without assigning them to a published release.
+
+### Maintenance
+
+- Align the root package version in the MSRV lock snapshot and add tests for existing token/OOV coverage, present-token ordering and duplicate preservation; projection behavior is unchanged.
+  ([source change](https://github.com/arclabs561/symproj/commit/3ed5a70cde0ae7df0e3df94c665965769d9a3b89))
+
 ## [Unreleased]
 
 ## [0.1.5] - 2026-10-09
