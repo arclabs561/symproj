@@ -29,4 +29,4 @@ proptest = "1.5"
 innr = "0.6.3"
 rankops = "0.2"
 static_assertions = "1.1"
-vicinity = { version = "0.10", default-features = false, features = ["hnsw"] }
+vicinity = { version = "0.11", default-features = false, features = ["hnsw"] }
