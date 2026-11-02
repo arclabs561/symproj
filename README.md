@@ -43,6 +43,18 @@ let vector = proj.encode("hello world");
 assert_eq!(vector, vec![0.5, 0.5]);
 ```
 
+`cargo run --example embed_and_search` encodes 12 two-word phrases with a
+hand-built 4-dimensional codebook, indexes them in HNSW, and queries new
+phrases. One query from its output:
+
+```text
+Query: "truck bus"
+  0: "car truck"  (distance=0.0028)
+  1: "car bus"  (distance=0.0055)
+  2: "bike bus"  (distance=0.0144)
+  3: "fast bike"  (distance=0.0543)
+```
+
 ## License
 
 MIT OR Apache-2.0
