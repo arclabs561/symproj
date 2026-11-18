@@ -390,26 +390,38 @@ pub fn sif_weight(p: f32, a: f32) -> f32 {
 
 /// L2-normalize a vector in place.
 ///
-/// If the input has norm 0, this is a no-op.
+/// Vectors with L2 norm at or below `1e-9` are left unchanged.
 pub fn l2_normalize_in_place(v: &mut [f32]) {
     #[cfg(feature = "simd")]
-    {
-        innr::normalize(v);
-    }
-
-    #[cfg(not(feature = "simd"))]
-    {
-        const NORM_EPSILON: f32 = 1e-9;
-        let mut ss = 0.0f32;
-        for &x in v.iter() {
-            ss += x * x;
-        }
-        let norm = ss.sqrt();
-        if norm <= NORM_EPSILON {
+    let norm = {
+        let norm = innr::norm(v);
+        // Preserve innr's no-op for a NaN norm.
+        if norm.is_nan() {
             return;
         }
-        let inv = 1.0f32 / norm;
-        for x in v.iter_mut() {
+        norm
+    };
+    #[cfg(not(feature = "simd"))]
+    let norm = v.iter().map(|&x| x * x).sum::<f32>().sqrt();
+
+    if norm <= 1e-9 {
+        return;
+    }
+    if norm.is_infinite() {
+        // Finite f32 components can overflow the sum of squares or the norm
+        // itself. Keep the rescaling in f64 until each component is unit-scale.
+        let inv = v
+            .iter()
+            .map(|&x| f64::from(x).powi(2))
+            .sum::<f64>()
+            .sqrt()
+            .recip();
+        for x in v {
+            *x = (f64::from(*x) * inv) as f32;
+        }
+    } else {
+        let inv = norm.recip();
+        for x in v {
             *x *= inv;
         }
     }
@@ -646,6 +658,31 @@ mod tests {
     }
 
     #[test]
+    fn l2_normalize_preserves_direction_when_f32_squares_overflow() {
+        // Exercise both short vectors and lengths eligible for SIMD dispatch.
+        for len in [2, 64] {
+            let mut v = vec![0.0; len];
+            v[0] = 3e20;
+            v[len - 1] = -4e20;
+            l2_normalize_in_place(&mut v);
+            assert!((v[0] - 0.6).abs() < 1e-6);
+            assert!((v[len - 1] + 0.8).abs() < 1e-6);
+        }
+
+        // Each square fits in f32, while their sum overflows.
+        let mut v = [1e19; 64];
+        l2_normalize_in_place(&mut v);
+        assert!(v.iter().all(|&x| (x - 0.125).abs() < 1e-6));
+
+        // Here the norm itself exceeds f32::MAX.
+        let mut v = [f32::MAX; 2];
+        l2_normalize_in_place(&mut v);
+        for x in v {
+            assert!((x - std::f32::consts::FRAC_1_SQRT_2).abs() < 1e-6);
+        }
+    }
+
+    #[test]
     fn single_token_equals_embedding() {
         let codebook = Codebook::new(vec![1.0, 2.0, 3.0], 3).unwrap();
         let v = codebook.encode_ids(&[0]);
@@ -755,10 +792,19 @@ mod tests {
     }
 
     #[test]
-    fn l2_normalize_noop_below_shared_norm_threshold() {
-        let mut v = vec![1e-10f32, 0.0];
+    fn l2_normalize_respects_shared_norm_threshold() {
+        for magnitude in [f32::from_bits(1), 1e-30, 1e-10, 1e-9] {
+            let mut v = [magnitude, -0.0];
+            l2_normalize_in_place(&mut v);
+            assert_eq!(
+                v.map(f32::to_bits),
+                [magnitude.to_bits(), (-0.0f32).to_bits()]
+            );
+        }
+
+        let mut v = [2e-9];
         l2_normalize_in_place(&mut v);
-        assert_eq!(v, vec![1e-10, 0.0]);
+        assert!((v[0] - 1.0).abs() < 1e-6);
     }
 
     #[test]
