@@ -1,8 +1,7 @@
 //! Compare symproj's `l2_normalize_in_place` with innr's `normalize`.
 //!
-//! Both should produce identical unit vectors. Without symproj's `simd` feature,
-//! this compares symproj's scalar implementation against innr. With the feature,
-//! `l2_normalize_in_place` delegates to innr and this checks the delegated path.
+//! With the `simd` feature, symproj uses innr's norm kernel. Both feature
+//! configurations should agree with innr on the encoded vectors below.
 
 use innr::{norm, normalize as innr_normalize};
 use symproj::{l2_normalize_in_place, Codebook};
