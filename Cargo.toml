@@ -21,7 +21,7 @@ simd = ["dep:innr"]
 
 [dependencies]
 innr = { version = "0.6.3", optional = true }
-textprep = "0.1.6"
+textprep = "0.3.1"
 thiserror = "2.0"
 
 [dev-dependencies]
